@@ -4,13 +4,15 @@ import jakarta.persistence.*;
 import java.util.List;
 
 @Entity
-@Table(name = "usuarios")
+@Table(
+        name = "usuarios",
+        uniqueConstraints = @UniqueConstraint(name = "uk_usuarios_nombre", columnNames = "nombre")
+)
 public class Usuario {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name="nombre", nullable=false, unique=true, length=80)
     private String nombre;
     private String password;
 

@@ -1,12 +1,10 @@
 package tareasApp.service;
 
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import tareasApp.model.Usuario;
 import tareasApp.repository.UsuarioRepository;
-
+import org.springframework.security.core.context.SecurityContextHolder;
 import java.util.List;
 
 @Service
@@ -20,66 +18,53 @@ public class UsuarioService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    // ==== SOLO ADMIN ====
-
-    @PreAuthorize("hasRole('ADMIN')")
-    @Transactional
     public Usuario crearUsuario(String nombre, String rawPassword, List<String> roles) {
-        validarNombreUnico(nombre);
+        String n = nombre == null ? "" : nombre.trim();
+        if (n.isEmpty()) throw new IllegalArgumentException("Nombre requerido");
+        if (usuarioRepository.existsByNombreIgnoreCase(n))
+            throw new IllegalArgumentException("Ya existe un usuario con ese nombre");
+
         Usuario u = new Usuario();
-        u.setNombre(nombre);
+        u.setNombre(n);
         u.setPassword(passwordEncoder.encode(rawPassword));
-        u.setRoles(normalizarRoles(roles));
+        u.setRoles(roles);
         return usuarioRepository.save(u);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     public List<Usuario> listarUsuarios() {
         return usuarioRepository.findAll();
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     public Usuario buscar(Long id) {
-        return usuarioRepository.findById(id).orElseThrow();
+        return usuarioRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
-    public Usuario buscarPorNombre(String nombre) {
-        return usuarioRepository.findByNombre(nombre).orElse(null);
-    }
-
-    @PreAuthorize("hasRole('ADMIN')")
-    @Transactional
     public Usuario actualizar(Long id, Usuario datos, List<String> roles) {
-        Usuario u = buscar(id);
-        if (!u.getNombre().equals(datos.getNombre())) {
-            validarNombreUnico(datos.getNombre());
-        }
-        u.setNombre(datos.getNombre());
+        Usuario existente = buscar(id);
+        String n = datos.getNombre() == null ? "" : datos.getNombre().trim();
+        if (n.isEmpty()) throw new IllegalArgumentException("Nombre requerido");
+        if (usuarioRepository.existsByNombreIgnoreCaseAndIdNot(n, id))
+            throw new IllegalArgumentException("Ya existe un usuario con ese nombre");
+
+        existente.setNombre(n);
         if (datos.getPassword() != null && !datos.getPassword().isBlank()) {
-            u.setPassword(passwordEncoder.encode(datos.getPassword()));
+            existente.setPassword(passwordEncoder.encode(datos.getPassword()));
         }
-        u.setRoles(normalizarRoles(roles));
-        return u; // JPA sincroniza al commit
+        existente.setRoles(roles);
+        return usuarioRepository.save(existente);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
-    @Transactional
     public void eliminar(Long id) {
+        String actual = SecurityContextHolder.getContext().getAuthentication().getName();
+        Usuario u = buscar(id);
+        if (u.getNombre().equals(actual)) {
+            throw new IllegalStateException("No puedes eliminarte a ti mismo");
+        }
         usuarioRepository.deleteById(id);
     }
 
-    // ==== helpers ====
-    private void validarNombreUnico(String nombre) {
-        if (usuarioRepository.findByNombre(nombre).isPresent()) {
-            throw new IllegalArgumentException("El nombre de usuario ya está en uso");
-        }
-    }
-
-    private List<String> normalizarRoles(List<String> roles) {
-        return roles.stream()
-                .map(r -> r.startsWith("ROLE_") ? r : "ROLE_" + r)
-                .distinct()
-                .toList();
+    public Usuario buscarPorNombre(String nombre) {
+        return usuarioRepository.findByNombre(nombre).orElse(null);
     }
 }

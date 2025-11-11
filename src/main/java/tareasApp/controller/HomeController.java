@@ -14,13 +14,8 @@ public class HomeController {
             boolean isAdmin = authentication.getAuthorities().stream()
                     .map(GrantedAuthority::getAuthority)
                     .anyMatch(role -> role.equals("ROLE_ADMIN"));
-
-            if (isAdmin) {
-                return "redirect:/admin/usuarios"; // Admin va a la lista de usuarios
-            } else {
-                return "redirect:/tareas"; // Usuarios normales van a tareas
-            }
+            return isAdmin ? "redirect:/admin/usuarios" : "redirect:/tareas/hoy";
         }
-        return "redirect:/login"; // No logueado → login
+        return "redirect:/login";
     }
 }

@@ -1,10 +1,66 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
+</div>
+<div class="col-md-2 d-grid">
+    <button class="btn btn-primary">Filtrar</button>
+</div>
+</div>
+</form>
+
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-striped mb-0">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Usuario</th>
+                <th>Vence</th>
+                <th>Estado</th>
+                <th>Archivada</th>
+                <th style="width:240px">Acciones</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="t : ${tareas}">
+                <td th:text="${t.id}"></td>
+                <td th:text="${t.titulo}"></td>
+                <td th:text="${t.usuario != null ? t.usuario.nombre : '—'}"></td>
+                <td th:text="${t.fechaVencimiento}"></td>
+                <td>
+<span th:classappend="${t.completada} ? 'badge bg-success' : 'badge bg-warning text-dark'"
+      th:text="${t.completada} ? 'Completada' : 'Pendiente'"></span>
+                </td>
+                <td>
+<span th:classappend="${t.archivada} ? 'badge bg-secondary' : 'badge bg-light text-dark border'"
+      th:text="${t.archivada} ? 'Sí' : 'No'"></span>
+                </td>
+                <td>
+                    <a class="btn btn-sm btn-warning" th:href="@{'/admin/tareas/' + ${t.id} + '/editar'}">Editar</a>
+                    <form th:if="${!t.archivada}" th:action="@{'/admin/tareas/' + ${t.id} + '/archivar'}" method="post" class="d-inline">
+                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <button class="btn btn-sm btn-outline-secondary">Archivar</button>
+                    </form>
+                    <form th:if="${t.archivada}" th:action="@{'/admin/tareas/' + ${t.id} + '/desarchivar'}" method="post" class="d-inline">
+                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <button class="btn btn-sm btn-outline-dark">Desarchivar</button>
+                    </form>
+                    <form th:action="@{'/admin/tareas/' + ${t.id} + '/eliminar'}" method="post" class="d-inline" onsubmit="return confirm('¿Eliminar tarea?');">
+                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <button class="btn btn-sm btn-danger">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(tareas)}">
+                <td colspan="7" class="text-center text-muted py-3">Sin resultados.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+<p class="mt-3 text-center text-muted small">&copy; 2025 TareasApp</p>
+</div>
 </body>
 </html>
