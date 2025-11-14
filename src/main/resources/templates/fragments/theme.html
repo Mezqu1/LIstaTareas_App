@@ -1,10 +1,90 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
+<html xmlns:th="http://www.thymeleaf.org">
 <body>
-$END$
+<th:block th:fragment="theme-toggle-script">
+    <script>
+        (function () {
+          const KEY = 'theme';
+          const root = document.documentElement;
+          const stored = localStorage.getItem(KEY);
+          const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          const initial = stored || (prefersDark ? 'dark' : 'light');
+
+          // Pintar el tema ANTES de que cargue el resto para evitar “flash”
+          root.setAttribute('data-bs-theme', initial);
+
+          function syncIcon(theme) {
+            const icon = document.getElementById('themeIcon');
+            if (icon) {
+              icon.classList.remove('bi-moon','bi-sun');
+              icon.classList.add(theme === 'dark' ? 'bi-sun' : 'bi-moon');
+            }
+            const btn = document.getElementById('themeToggle');
+            if (btn) btn.setAttribute('aria-label', theme === 'dark' ? 'Cambiar a claro' : 'Cambiar a oscuro');
+          }
+
+          // Re-enganchar cuando el DOM ya está
+          document.addEventListener('DOMContentLoaded', function () {
+            syncIcon(initial);
+
+            const btn = document.getElementById('themeToggle');
+            if (btn && !btn.dataset.bound) {
+              btn.addEventListener('click', () => {
+                const current = root.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light';
+                const next = current === 'dark' ? 'light' : 'dark';
+                root.setAttribute('data-bs-theme', next);
+                localStorage.setItem(KEY, next);
+                syncIcon(next);
+              });
+              btn.dataset.bound = '1';
+            }
+          });
+
+          // Seguir al sistema si no hay preferencia guardada
+          if (!stored && window.matchMedia) {
+            const mq = window.matchMedia('(prefers-color-scheme: dark)');
+            const onChange = e => {
+              const next = e.matches ? 'dark' : 'light';
+              root.setAttribute('data-bs-theme', next);
+              syncIcon(next);
+            };
+            if (mq.addEventListener) mq.addEventListener('change', onChange);
+            else if (mq.addListener)   mq.addListener(onChange);
+          }
+        })();
+    </script>
+
+    <!-- Fixes de tema para Bootstrap 5.3 -->
+    <style>
+        [data-bs-theme="dark"] .bg-white { background-color: var(--bs-card-bg) !important; }
+        [data-bs-theme="dark"] .bg-light { background-color: var(--bs-body-bg) !important; }
+
+        [data-bs-theme="dark"] .navbar {
+          --bs-navbar-color: rgba(255,255,255,.85);
+          --bs-navbar-hover-color: #fff;
+          --bs-navbar-brand-color: #fff;
+          --bs-navbar-toggler-border-color: rgba(255,255,255,.25);
+        }
+        [data-bs-theme="dark"] .navbar .navbar-toggler-icon { filter: invert(1) grayscale(100%); }
+
+        [data-bs-theme="dark"] .table thead {
+          --bs-table-color: var(--bs-body-color);
+          --bs-table-bg: var(--bs-tertiary-bg);
+        }
+
+        [data-bs-theme="dark"] .btn-outline-secondary {
+          color: var(--bs-body-color); border-color: #6c757d;
+        }
+        [data-bs-theme="dark"] .btn-outline-secondary:hover { background-color: #2a2f32; }
+
+        [data-bs-theme="dark"] .btn-outline-dark {
+          color: var(--bs-body-color); border-color: #565e64;
+        }
+        [data-bs-theme="dark"] .btn-outline-dark:hover { background-color: #2a2f32; }
+
+        [data-bs-theme="dark"] .card { background-color: var(--bs-card-bg); border-color: var(--bs-border-color); }
+        [data-bs-theme="dark"] .border-bottom { border-bottom-color: var(--bs-border-color) !important; }
+    </style>
+</th:block>
 </body>
 </html>

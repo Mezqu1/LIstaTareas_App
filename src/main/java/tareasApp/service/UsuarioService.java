@@ -5,7 +5,9 @@ import org.springframework.stereotype.Service;
 import tareasApp.model.Usuario;
 import tareasApp.repository.UsuarioRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
+
 import java.util.List;
+import java.util.ArrayList;
 
 @Service
 public class UsuarioService {
@@ -27,7 +29,8 @@ public class UsuarioService {
         Usuario u = new Usuario();
         u.setNombre(n);
         u.setPassword(passwordEncoder.encode(rawPassword));
-        u.setRoles(roles);
+        // IMPORTANTE: copiar a lista modificable
+        u.setRoles(new ArrayList<>(roles));
         return usuarioRepository.save(u);
     }
 
@@ -42,16 +45,28 @@ public class UsuarioService {
 
     public Usuario actualizar(Long id, Usuario datos, List<String> roles) {
         Usuario existente = buscar(id);
+
         String n = datos.getNombre() == null ? "" : datos.getNombre().trim();
-        if (n.isEmpty()) throw new IllegalArgumentException("Nombre requerido");
-        if (usuarioRepository.existsByNombreIgnoreCaseAndIdNot(n, id))
+        if (n.isEmpty()) {
+            throw new IllegalArgumentException("Nombre requerido");
+        }
+
+        // solo valido duplicado si realmente cambia el nombre
+        if (!n.equalsIgnoreCase(existente.getNombre())
+                && usuarioRepository.existsByNombreIgnoreCase(n)) {
             throw new IllegalArgumentException("Ya existe un usuario con ese nombre");
+        }
 
         existente.setNombre(n);
+
+        // contraseña: solo si viene algo no vacío
         if (datos.getPassword() != null && !datos.getPassword().isBlank()) {
             existente.setPassword(passwordEncoder.encode(datos.getPassword()));
         }
-        existente.setRoles(roles);
+
+        // IMPORTANTE: también copiar aquí
+        existente.setRoles(new ArrayList<>(roles));
+
         return usuarioRepository.save(existente);
     }
 
