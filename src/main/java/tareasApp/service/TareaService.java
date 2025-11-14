@@ -3,7 +3,10 @@ package tareasApp.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tareasApp.model.Tarea;
+import tareasApp.model.Usuario;
 import tareasApp.repository.TareaRepository;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -12,9 +15,20 @@ import java.util.List;
 public class TareaService {
 
     private final TareaRepository repo;
+    private final UsuarioService usuarioService;
 
-    public TareaService(TareaRepository repo) {
+    public TareaService(TareaRepository repo, UsuarioService usuarioService) {
         this.repo = repo;
+        this.usuarioService = usuarioService;
+    }
+
+    // ---------- helper: usuario logueado ----------
+    private Usuario usuarioActual() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) return null;
+        String nombre = auth.getName();
+        if (nombre == null || nombre.isBlank()) return null;
+        return usuarioService.buscarPorNombre(nombre);
     }
 
     // --- Listas rápidas para la UI ---
@@ -49,7 +63,11 @@ public class TareaService {
         t.setFechaVencimiento(fechaVencimiento != null ? fechaVencimiento : LocalDate.now());
         t.setCompletada(false);
         t.setArchivada(false);
-        // opcional: t.setUsuario(usuarioActual) si querés auditar
+
+        // NUEVO: asociar al usuario que crea la tarea
+        Usuario creador = usuarioActual();
+        t.setUsuario(creador); // si es null, luego se muestra "—" en la vista
+
         return repo.save(t);
     }
 
@@ -123,6 +141,7 @@ public class TareaService {
             return repo.findByArchivadaFalseAndFechaVencimientoBetweenAndTituloContainingIgnoreCase(d1, d2, qTrim);
         return repo.findByArchivadaFalseAndFechaVencimientoBetween(d1, d2);
     }
+
     // --- Compatibilidad Admin ---
     @Transactional(readOnly = true)
     public List<Tarea> buscarGlobal(String q) {
