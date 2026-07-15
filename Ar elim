@@ -1,0 +1,10 @@
+# 1. Actualizar repositorios
+sudo apt update && sudo apt upgrade -y
+
+# 2. Instalar herramientas de compilación esenciales
+sudo apt install build-essential libgl1-mesa-dev libxcb-cursor-dev git -y
+
+# 3. Instalar librerías XCB necesarias para que Qt no falle al iniciar
+sudo apt install libx11-xcb1 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
+libxcb-randr0 libxcb-render-util0 libxcb-sync1 libxcb-xfixes0 \
+libxcb-xinerama0 libxcb-xkb1 libxkbcommon-x11-0 -y
